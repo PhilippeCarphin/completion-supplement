@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+#
+_hcron(){
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local prev=${COMP_WORDS[COMP_CWORD-1]}
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY+=($(compgen -W "--debug --help -h" -- "${cur}"))
+    fi
+    case ${COMP_CWORD} in
+        1)  COMPREPLY=($(compgen -W "activate conv doc event get list reload run show-log unload version" -- "${cur}")) ;;
+        *)  case ${COMP_WORDS[1]} in
+                activate) _hcron_activate ; return ;;
+                conv) _hcron_conv ; return ;;
+                doc) _hcron_doc ; return ;;
+                get) _hcron_get ; return ;;
+                list) _hcron_list ; return ;;
+                run|reload|unload|show-log|version) return ;;
+            esac ;;
+    esac
+}
+
+_hcron_activate(){
+    _hcron_event_names
+}
+
+_hcron_conv(){
+    if _hcron_cmd_contains --to-events || _hcron_cmd_contains --to-crontab ; then
+        _filedir
+    else
+        COMPREPLY+=($(compgen -W "--to-events --to-crontab" -- "${cur}"))
+    fi
+}
+
+_hcron_doc(){
+    # Because hcron doc --help is incorrect about '-c CONFIG FILE' being
+    # optional, completion takes care of the user by ignoring what they have on
+    # the command line and forcing -c /etc/hcron/hcron.conf
+    if ! _hcron_cmd_contains "-c" ; then
+        # printf "\n_hcron_doc forcing -c\n%s%s" "${PS1@P}" "${COMP_LINE}"
+        COMPREPLY=("-c")
+    elif [[ ${prev} == "-c" ]] ; then
+        # printf "\n_hcron_doc forcing config file\n%s%s" "${PS1@P}" "${COMP_LINE}"
+        COMPREPLY=("/etc/hcron/hcron.conf")
+    else
+        _filedir
+    fi
+}
+
+_hcron_get(){
+    COMPREPLY+=($(compgen -W "allowed fqdn servername" -- "${cur}"))
+}
+
+_hcron_event(){
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY+=($(compgen -W "-c -y" -- "${cur}"))
+    elif declare -f _filedir >/dev/null 2>&1 ; then
+        _filedir
+    fi
+}
+
+_hcron_list(){
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY+=($(compgen -W "--show-all --show-status" -- "${cur}"))
+    else
+        _hcron_event_names
+    fi
+}
+
+_hcron_event_names(){
+    while read event ; do
+        name=${event##*:}
+        if [[ ${name} == ${cur}* ]] ; then
+            COMPREPLY+=(${name})
+        fi
+    done < <(hcron list --show-all)
+}
+
+_hcron_cmd_contains(){
+    for cmd_word in ${COMP_WORDS[@]:1:${#COMP_WORDS[*]}-2} ; do
+        if [[ ${cmd_word} == ${1} ]] ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+complete -F _hcron hcron
