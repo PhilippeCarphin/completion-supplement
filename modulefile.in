@@ -1,0 +1,8 @@
+#%Module
+set VERSION "1.0.0"
+proc ModulesHelp {} {
+    puts stderr "completion-supplement is a set of bash completion files"
+}
+module-whatis "completion-supplement is a set of bash completion files"
+
+prepend-path XDG_DATA_DIRS @PREFIX@/share
