@@ -1,7 +1,7 @@
 PREFIX ?= localinstall
 
 moduledir=share/modulefiles
-compdir=share/bash-comletion/completions
+compdir=share/bash-completion/completions
 
 modulefile=$(moduledir)/completion-supplement
 hcron_comp=$(compdir)/_hcron
