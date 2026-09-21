@@ -1,10 +1,8 @@
-PREFIX ?= localinstall
+completions=$(wildcard share/bash-completion/completions/_*)
+PREFIX ?= $(HOME)/.local
 
 moduledir=share/modulefiles
-compdir=share/bash-completion/completions
-
 modulefile=$(moduledir)/completion-supplement
-hcron_comp=$(compdir)/_hcron
 
 ifeq ($(shell uname),Darwin)
 	INSTALL=ginstall
@@ -15,14 +13,13 @@ endif
 all: $(modulefile)
 
 install:$(modulefile)
-	install -D $(hcron_comp) $(DESTDIR)$(PREFIX)/$(hcron_comp)
-	install -D $(modulefile) $(DESTDIR)$(PREFIX)/$(modulefile)
+	for comp in $(completions) ; do install -vD -m 644 $${comp} $(DESTDIR)$(PREFIX)/$${comp} ; done
+	install -D -m 644 $(modulefile) $(DESTDIR)$(PREFIX)/share/modulefiles/completion-supplement-cmc
 
 $(modulefile):$(modulefile).in
 	sed 's|PREFIX|$(PWD)|g' $^ >$@
 
 install-dev:$(modulefile)
-	mkdir -p $(DESTDIR)$(PREFIX)/$(compdir)
-	ln -snf  $(PWD)/$(hcron_comp) $(DESTDIR)$(PREFIX)/$(hcron_comp)
-	mkdir -p $(DESTDIR)$(PREFIX)/$(moduledir)
-	ln -snf  $(PWD)/$(modulefile) $(DESTDIR)$(PREFIX)/$(modulefile)
+	mkdir -p $(DESTDIR)$(PREFIX)/share/bash-completion/completions $(DESTDIR)$(PREFIX)/share/modulefiles
+	for comp in $(completions) ; do ln -snfv $(PWD)/$${comp} $(DESTDIR)$(PREFIX)/$${comp} ; done
+	ln -snf $(PWD)/$(modulefile) $(DESTDIR)$(PREFIX)/share/modulefiles/completion-supplement
