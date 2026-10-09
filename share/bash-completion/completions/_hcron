@@ -7,15 +7,67 @@ _hcron(){
         COMPREPLY+=($(compgen -W "--debug --help -h" -- "${cur}"))
     fi
     case ${COMP_CWORD} in
-        1)  COMPREPLY=($(compgen -W "activate conv doc event get list reload run show-log unload version" -- "${cur}")) ;;
+        1)  _hcron_subcommands ; return ;;
         *)  case ${COMP_WORDS[1]} in
                 activate) _hcron_activate ; return ;;
                 conv) _hcron_conv ; return ;;
                 doc) _hcron_doc ; return ;;
                 get) _hcron_get ; return ;;
                 list) _hcron_list ; return ;;
+                run) _hcron_run ; return ;;
                 run|reload|unload|show-log|version) return ;;
             esac ;;
+    esac
+}
+
+_hcron_subcommands(){
+    local -A desc=(
+        [activate]="Run an hcron event right now"
+        [conv]="Convert between hcron and crontab"
+        [doc]="Generate HTML summary of your hcrons"
+        [event]="Create/edit event file"
+        [get]="Get hcron information"
+        [list]="List loaded hcrons on this host $(hostname)"
+        [reload]="Load crons in \$HOME/.hcron/$(hostname --fqdn)/events"
+        [run]="Prints a log of what *would* run in a given interval"
+        [show-log]="Show the log"
+        [unload]="Unload events"
+        [version]="Print version"
+    )
+    COMPREPLY=($(compgen -W "activate conv doc event get list reload run show-log unload version" -- "${cur}"))
+    if ((${#COMPREPLY[@]} <= 1)) ; then
+        return
+    fi
+
+    local i c max_c=0
+    for c in ${COMPREPLY[@]}; do
+        if ((${#c} > max_c)); then
+            max_c=${#c}
+        fi
+    done
+    for((i=0; i<${#COMPREPLY[@]}; i++)) ; do
+        printf -v COMPREPLY[i] "%-${max_c}s (%s)" "${COMPREPLY[i]}" "${desc[${COMPREPLY[i]}]}"
+    done
+}
+
+_hcron_compinfo(){
+    printf "\nCOMPLETION INFO: %s\n%s%s" "$*" "${PS1@P}" "${COMP_LINE}" >&2
+}
+
+_hcron_run(){
+    case ${COMP_CWORD} in
+        2)
+            _hcron_compinfo "Arg should be a directory in \$HOME/.hcron/hcron-dev-*/events"
+            if [[ -z ${cur} ]] ; then
+                COMPREPLY=("$HOME/.hcron/$(hostname --fqdn)/events")
+                return
+            else
+                _filedir
+            fi
+            ;;
+        3|4)
+            _hcron_compinfo "Arg should be a date as YYYYMMDD[HHMM]"
+            ;;
     esac
 }
 
@@ -36,12 +88,13 @@ _hcron_doc(){
     # optional, completion takes care of the user by ignoring what they have on
     # the command line and forcing -c /etc/hcron/hcron.conf
     if ! _hcron_cmd_contains "-c" ; then
-        # printf "\n_hcron_doc forcing -c\n%s%s" "${PS1@P}" "${COMP_LINE}"
-        COMPREPLY=("-c")
+        _hcron_compinfo "forcing '-c /etc/hcron/hcron.conf' because otherwise hcron fails without telling us why"
+        COMPREPLY=("-c /etc/hcron/hcron.conf")
     elif [[ ${prev} == "-c" ]] ; then
-        # printf "\n_hcron_doc forcing config file\n%s%s" "${PS1@P}" "${COMP_LINE}"
+        _hcron_compinfo "forcing '-c /etc/hcron/hcron.conf' because otherwise hcron fails without telling us why"
         COMPREPLY=("/etc/hcron/hcron.conf")
     else
+        _hcron_compinfo "Arg should be a snapshot file or an events dir"
         _filedir
     fi
 }
@@ -72,7 +125,7 @@ _hcron_event_names(){
         if [[ ${name} == ${cur}* ]] ; then
             COMPREPLY+=(${name})
         fi
-    done < <(hcron list --show-all)
+    done < <(hcron list --show-all 2>/dev/null)
 }
 
 _hcron_cmd_contains(){
