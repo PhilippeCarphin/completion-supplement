@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
+
 #
+# By default, some info will get printed when completing some commands.  To
+# disable this, set HCRON_NO_COMPINFO to a non-empty value.
+#
+# To disable injection of descriptions into completion candidates, set the
+# variable HCRON_NO_COMPDESC to a non-empty value.
+#
+
 _hcron(){
     local cur=${COMP_WORDS[COMP_CWORD]}
     local prev=${COMP_WORDS[COMP_CWORD-1]}
     if [[ ${cur} == -* ]] ; then
         COMPREPLY+=($(compgen -W "--debug --help -h" -- "${cur}"))
     fi
+
     case ${COMP_CWORD} in
         1)  _hcron_subcommands ; return ;;
         *)  case ${COMP_WORDS[1]} in
@@ -15,7 +24,7 @@ _hcron(){
                 get) _hcron_get ; return ;;
                 list) _hcron_list ; return ;;
                 run) _hcron_run ; return ;;
-                run|reload|unload|show-log|version) return ;;
+                reload|unload|show-log|version) return ;;
             esac ;;
     esac
 }
@@ -39,6 +48,10 @@ _hcron_subcommands(){
         return
     fi
 
+    if [[ -n $HCRON_NO_COMPDESC ]] ; then
+        return
+    fi
+
     local i c max_c=0
     for c in ${COMPREPLY[@]}; do
         if ((${#c} > max_c)); then
@@ -51,7 +64,10 @@ _hcron_subcommands(){
 }
 
 _hcron_compinfo(){
-    printf "\nCOMPLETION INFO: %s\n%s%s" "$*" "${PS1@P}" "${COMP_LINE}" >&2
+    if [[ -n $HCRON_NO_COMPINFO ]] ; then
+        return
+    fi
+    printf "\nCOMPLETION INFO: %s\n%s%s" "$*" "${PS1@P}" "${COMP_LINE}"
 }
 
 _hcron_run(){
