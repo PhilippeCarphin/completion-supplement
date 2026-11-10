@@ -1,4 +1,4 @@
-completions=$(wildcard share/bash-completion/completions/_*)
+completions=$(wildcard share/bash-completion/completions/*.bash)
 PREFIX ?= $(HOME)/.local
 
 moduledir=share/modulefiles
